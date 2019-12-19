@@ -2,6 +2,7 @@ package org.jax.npi.analysis;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jax.npi.data.Enhancer;
+import org.jax.npi.data.H3K27AcSignal;
 
 import java.io.*;
 import java.util.*;
@@ -9,10 +10,13 @@ import java.util.zip.GZIPInputStream;
 
 public class ChromosomeWithEnhancers {
 
-    Map<String, List<Enhancer>> chromosome2enhancerList;
+    private final Map<String, List<Enhancer>> chromosome2enhancerList;
+
+    private int number_of_experiments;
 
     public ChromosomeWithEnhancers(List<Enhancer> enhancerList) {
         chromosome2enhancerList = new HashMap<>();
+        number_of_experiments = 0;
         for (Enhancer e : enhancerList) {
             chromosome2enhancerList.putIfAbsent(e.getChromosome(), new ArrayList<>());
             List<Enhancer> enlst = chromosome2enhancerList.get(e.getChromosome());
@@ -54,16 +58,19 @@ public class ChromosomeWithEnhancers {
                 int begin = Integer.parseInt(F[1]);
                 int end = Integer.parseInt(F[2]);
                 double value = Double.parseDouble(F[6]);
-                addDataPoint(chrom, begin, end, value);
+                addDataPoint(chrom, begin, end, value, bedfile.getName());
             }
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Could not read " + bedfile.getAbsolutePath());
         }
+        this.number_of_experiments += 1;
     }
 
+
+
     /** Naive algorithm, but fast enough in practice. */
-    private void addDataPoint(String chrom, int begin, int end, double value) {
+    private void addDataPoint(String chrom, int begin, int end, double value, String experiment) {
         if (! this.chromosome2enhancerList.containsKey(chrom)) {
             System.err.println("Could not find chromosome " + chrom);
             return;
@@ -76,7 +83,11 @@ public class ChromosomeWithEnhancers {
                 continue; //(begin, end) is located 5' to the enhancer
             } else if (begin >= e.getBegin() || end <= e.getEnd()){
                 // if we get here, there is OVERLAP
-                e.addH3K27AcValue(value);
+                //int len = getOverlap(begin, end, e);
+                int B = begin < e.getBegin() ? e.getBegin() : begin;
+                int E = end > e.getEnd() ? e.getEnd() : end;
+                H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
+                e.addH3K27AcValue(h3k27, experiment);
             }
         }
     }
@@ -87,10 +98,14 @@ public class ChromosomeWithEnhancers {
         List<Double> noncgi = new ArrayList<>();
         for (List<Enhancer> enhs : chromosome2enhancerList.values()) {
             for (Enhancer enh : enhs) {
+                double mean = enh.getMeanH3K27AcPer1000(number_of_experiments);
+                if (mean > 0) {
+                    System.out.println("Mean-"+mean);
+                }
                 if (enh.isCpG()) {
-                    cgi.add(enh.getMeanH3K27Ac());
+                    cgi.add(mean);
                 } else {
-                    noncgi.add(enh.getMeanH3K27Ac());
+                    noncgi.add(mean);
                 }
             }
         }
@@ -104,6 +119,29 @@ public class ChromosomeWithEnhancers {
         }
         System.out.printf("[INFO] Mean H3K27Ac (CGI): %f.\n", cgistats.getMean());
         System.out.printf("[INFO] Mean H3K27Ac (Non-CGI): %f.\n", noncgistats.getMean());
+    }
+
+
+    public void output_for_R(String filename) {
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
+            for (List<Enhancer> enhs : chromosome2enhancerList.values()) {
+                for (Enhancer enh : enhs) {
+                    if (enh.isCpG()) {
+                        double mean = enh.getMeanH3K27AcPer1000(number_of_experiments);
+                        bw.write(String.format("%s\t%f\n", "cgi", mean ));
+                    } else {
+                        double mean = enh.getMeanH3K27AcPer1000(number_of_experiments);
+                        bw.write(String.format("%s\t%f\n", "non.cgi", mean ));
+                    }
+                }
+            }
+            bw.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
+
     }
 
 
