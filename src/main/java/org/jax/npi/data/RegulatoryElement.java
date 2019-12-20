@@ -54,8 +54,8 @@ public class RegulatoryElement implements Comparable<RegulatoryElement> {
     public void processLastExperiment() {
         // process the H3K27AcSignal from the last experiment and then reset the list
         if (this.signals.isEmpty()) {
-            this.means.add(1.0); // pseudocount
-            this.maxima.add(1.0);
+            this.means.add(0.0);
+            this.maxima.add(0.0);
             return; // no need to reset
         }
         double max = this.signals.stream().mapToDouble(H3K27AcSignal::getValue).max().orElse(1.0);
@@ -80,7 +80,6 @@ public class RegulatoryElement implements Comparable<RegulatoryElement> {
             throw new RuntimeException("BADNESS -- Total len of segments more than enhancer len");
         }
         weightedSum = weightedSum * 1000.0/enhancerlen;
-        weightedSum = Math.max(1.0, weightedSum);
         means.add(weightedSum);
         this.signals = new ArrayList<>(); // reset
     }
@@ -91,7 +90,7 @@ public class RegulatoryElement implements Comparable<RegulatoryElement> {
             // this means there is a zero value
             int delta = expectedTotal - means.size();
             for (int j = 0; j < delta; j++) {
-                means.add(1.0); // adding 'fake' value for missing experiment
+                means.add(0.0); // adding 'fake' value for missing experiment
             }
         }
         double m = means.stream().mapToDouble(Double::doubleValue).average().getAsDouble();
@@ -104,7 +103,7 @@ public class RegulatoryElement implements Comparable<RegulatoryElement> {
             // this means there is a zero value
             int delta = expectedTotal - means.size();
             for (int j = 0; j < delta; ++j) {
-                maxima.add(1.0);
+                maxima.add(0.0);
             }
         }
         double m = maxima.stream().mapToDouble(Double::doubleValue).average().getAsDouble();

@@ -24,6 +24,11 @@ public class TssPromoterStatsParser implements RegulatoryElementTssParser {
         return enhancerList;
     }
 
+
+
+
+
+
     /**
      * tss     gene    tags    tau.c   tau.t   dispersion      dispersion<=12  CpG.p   CpG.m
      * D       R       F       TATA    BREu    BREd    Inr     TCT     XCPE1   XCPE2   DPE     MTE     Bridge  DCE     DCE3
@@ -57,6 +62,13 @@ public class TssPromoterStatsParser implements RegulatoryElementTssParser {
                 // The position needs to be extended 500 bp upsteam and 50 bp downstream from the tss
                 int start = Integer.parseInt(B[0]);
                 int end = Integer.parseInt(B[1]);
+                if (isPlusStrand) {
+                    start -= 500;
+                    end += 200;
+                } else {
+                    start -= 200;
+                    end += 500;
+                }
                 if (cpgp.equals("1") && cpcm.equals("0")) {
                     enhancerList.add(new RegulatoryElement(chrom, start, end, true));
                     cpg_count++;

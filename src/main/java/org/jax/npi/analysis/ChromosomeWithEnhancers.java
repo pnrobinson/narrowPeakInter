@@ -4,6 +4,9 @@ import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
 import org.jax.npi.data.RegulatoryElement;
 import org.jax.npi.data.H3K27AcSignal;
 
+import static org.apache.commons.math3.stat.inference.TestUtils.chiSquare;
+import static org.apache.commons.math3.stat.inference.TestUtils.chiSquareTest;
+
 import java.io.*;
 import java.util.*;
 import java.util.zip.GZIPInputStream;
@@ -78,8 +81,11 @@ public class ChromosomeWithEnhancers {
     /** Naive algorithm, but fast enough in practice. */
     private void addDataPoint(String chrom, int begin, int end, double value) {
         if (! this.chromosome2enhancerList.containsKey(chrom)) {
-            System.err.println("Could not find chromosome " + chrom);
-            return;
+            if (chrom.contains("random") || chrom.contains("Un_")) {
+                // do not worry about these scaffolds, just skip
+                return;
+            }
+            throw new RuntimeException("Could not find chromosome " + chrom);
         }
         if (begin > end) {
             throw new RuntimeException(String.format("Begin=%d and end =%d\n", begin, end));
@@ -110,6 +116,19 @@ public class ChromosomeWithEnhancers {
     }
 
 
+    private void performChiSquareTest(long a, long b, long c, long d) {
+        long A[][] = new long[2][2];
+        A[0][0] = a;
+        A[0][1] = b;
+        A[1][0] = c;
+        A[1][1] = d;
+        double chi2 = chiSquare(A);
+        double pval = chiSquareTest(A);
+        System.out.printf("Zero values-CGI: %.2f%%, non CGI: %.2f%%\n", 100.0*(double)a/((double)(a+b)), 100.0 * (double)c/((double)(c+d)));
+        System.out.printf("[INFO] chi2: %f, pval = %e\n", chi2, pval);
+    }
+
+
     public void calculateMeanCGIvsNonCGI() {
         List<Double> cgi = new ArrayList<>();
         List<Double> noncgi = new ArrayList<>();
@@ -131,13 +150,31 @@ public class ChromosomeWithEnhancers {
         }
         DescriptiveStatistics cgistats = new DescriptiveStatistics();
         DescriptiveStatistics noncgistats = new DescriptiveStatistics();
+        int zeroActivityCGI = 0; // count of CGI-items with ZERO h3K28ac
+        int nonZeroActivityCGI = 0;
+        int zeroActivityNonCGI = 0;// count of non-CGI-items with ZERO h3K28ac
+        int nonZeroActivityNonCGI = 0;
+
         for (Double v : cgi) {
-            cgistats.addValue(v);
+            if (v == 0.0) {
+                zeroActivityCGI++;
+            } else {
+                cgistats.addValue(v);
+                nonZeroActivityCGI++;
+            }
         }
         for (Double v : noncgi){
-            noncgistats.addValue(v);
+            if (v == 0.0) {
+                zeroActivityNonCGI++;
+            } else {
+                noncgistats.addValue(v);
+                nonZeroActivityNonCGI++;
+            }
         }
-        System.out.printf("[INFO] Analyzed %d regulatory elements (%d were above zero)\n.", total, totalabovezero);
+        System.out.printf("[INFO] CGI: Zero: %d, Nonzero: %d\n", zeroActivityCGI, nonZeroActivityCGI);
+        System.out.printf("[INFO] non-CGI: Zero: %d, Nonzero: %d\n", zeroActivityNonCGI, nonZeroActivityNonCGI);
+        performChiSquareTest(zeroActivityCGI, nonZeroActivityCGI, zeroActivityNonCGI, nonZeroActivityNonCGI);
+        System.out.printf("[INFO] Analyzed %d regulatory elements (%d were above zero)\n", total, totalabovezero);
         System.out.printf("[INFO] Mean H3K27Ac (CGI): %f.\n", cgistats.getMean());
         System.out.printf("[INFO] Mean H3K27Ac (Non-CGI): %f.\n", noncgistats.getMean());
     }
@@ -148,11 +185,11 @@ public class ChromosomeWithEnhancers {
             BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
             for (List<RegulatoryElement> enhs : chromosome2enhancerList.values()) {
                 for (RegulatoryElement enh : enhs) {
+                    double mean = enh.getMeanH3K27AcPer1000(number_of_experiments);
+                    if (mean==0.0) continue;
                     if (enh.isCpG()) {
-                        double mean = enh.getMeanH3K27AcPer1000(number_of_experiments);
                         bw.write(String.format("%s\t%f\n", "cgi", mean ));
                     } else {
-                        double mean = enh.getMeanH3K27AcPer1000(number_of_experiments);
                         bw.write(String.format("%s\t%f\n", "non.cgi", mean ));
                     }
                 }
