@@ -2,7 +2,10 @@ package org.jax.npi.data;
 
 import java.util.*;
 
-public class Enhancer implements Comparable<Enhancer> {
+/**
+ * Represents a promoter or enhancer with its H3K27ac signals
+ */
+public class RegulatoryElement implements Comparable<RegulatoryElement> {
 
     private final String chromosome;
     private final int begin;
@@ -11,7 +14,7 @@ public class Enhancer implements Comparable<Enhancer> {
     private List<H3K27AcSignal> signals;
     private final boolean isCpG;
 
-    public Enhancer(String chrom, int b, int e, boolean cpg) {
+    public RegulatoryElement(String chrom, int b, int e, boolean cpg) {
         this.chromosome = chrom;
         this.begin = b;
         this.end = e;
@@ -96,7 +99,7 @@ public class Enhancer implements Comparable<Enhancer> {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        Enhancer enhancer = (Enhancer) o;
+        RegulatoryElement enhancer = (RegulatoryElement) o;
         return begin == enhancer.begin &&
                 end == enhancer.end &&
                 Objects.equals(chromosome, enhancer.chromosome);
@@ -108,7 +111,7 @@ public class Enhancer implements Comparable<Enhancer> {
     }
 
     @Override
-    public int compareTo(Enhancer enhancer) {
+    public int compareTo(RegulatoryElement enhancer) {
         return Integer.compare(begin, enhancer.begin);
     }
 }

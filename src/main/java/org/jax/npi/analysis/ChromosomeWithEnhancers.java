@@ -1,7 +1,7 @@
 package org.jax.npi.analysis;
 
 import org.apache.commons.math3.stat.descriptive.DescriptiveStatistics;
-import org.jax.npi.data.Enhancer;
+import org.jax.npi.data.RegulatoryElement;
 import org.jax.npi.data.H3K27AcSignal;
 
 import java.io.*;
@@ -10,20 +10,20 @@ import java.util.zip.GZIPInputStream;
 
 public class ChromosomeWithEnhancers {
 
-    private final Map<String, List<Enhancer>> chromosome2enhancerList;
+    private final Map<String, List<RegulatoryElement>> chromosome2enhancerList;
 
     private int number_of_experiments;
 
-    public ChromosomeWithEnhancers(List<Enhancer> enhancerList) {
+    public ChromosomeWithEnhancers(List<RegulatoryElement> enhancerList) {
         chromosome2enhancerList = new HashMap<>();
         number_of_experiments = 0;
-        for (Enhancer e : enhancerList) {
+        for (RegulatoryElement e : enhancerList) {
             chromosome2enhancerList.putIfAbsent(e.getChromosome(), new ArrayList<>());
-            List<Enhancer> enlst = chromosome2enhancerList.get(e.getChromosome());
+            List<RegulatoryElement> enlst = chromosome2enhancerList.get(e.getChromosome());
             enlst.add(e);
         }
         // sort the Enhancers
-        for (List<Enhancer> lst : chromosome2enhancerList.values()) {
+        for (List<RegulatoryElement> lst : chromosome2enhancerList.values()) {
             Collections.sort(lst);
         }
     }
@@ -66,8 +66,8 @@ public class ChromosomeWithEnhancers {
         }
         this.number_of_experiments += 1;
         // process the data from this experment
-        for ( List<Enhancer> lst : chromosome2enhancerList.values()) {
-            for (Enhancer e : lst) {
+        for ( List<RegulatoryElement> lst : chromosome2enhancerList.values()) {
+            for (RegulatoryElement e : lst) {
                 e.processLastExperiment();
             }
         }
@@ -84,8 +84,8 @@ public class ChromosomeWithEnhancers {
         if (begin > end) {
             throw new RuntimeException(String.format("Begin=%d and end =%d\n", begin, end));
         }
-        List<Enhancer> enhancers = this.chromosome2enhancerList.get(chrom);
-        for (Enhancer e : enhancers) {
+        List<RegulatoryElement> enhancers = this.chromosome2enhancerList.get(chrom);
+        for (RegulatoryElement e : enhancers) {
             if (e.getBegin() > end) {
                 return; // the enhancers are sorted -- the current enhancer is already beyond the end
                 // of the new interval and there was no match
@@ -113,11 +113,14 @@ public class ChromosomeWithEnhancers {
     public void calculateMeanCGIvsNonCGI() {
         List<Double> cgi = new ArrayList<>();
         List<Double> noncgi = new ArrayList<>();
-        for (List<Enhancer> enhs : chromosome2enhancerList.values()) {
-            for (Enhancer enh : enhs) {
+        int total = 0;
+        int totalabovezero = 0;
+        for (List<RegulatoryElement> enhs : chromosome2enhancerList.values()) {
+            for (RegulatoryElement enh : enhs) {
+                total++;
                 double mean = enh.getMeanH3K27AcPer1000(number_of_experiments);
                 if (mean > 0) {
-                    System.out.println("Mean-"+mean);
+                    totalabovezero++;
                 }
                 if (enh.isCpG()) {
                     cgi.add(mean);
@@ -134,6 +137,7 @@ public class ChromosomeWithEnhancers {
         for (Double v : noncgi){
             noncgistats.addValue(v);
         }
+        System.out.printf("[INFO] Analyzed %d regulatory elements (%d were above zero)\n.", total, totalabovezero);
         System.out.printf("[INFO] Mean H3K27Ac (CGI): %f.\n", cgistats.getMean());
         System.out.printf("[INFO] Mean H3K27Ac (Non-CGI): %f.\n", noncgistats.getMean());
     }
@@ -142,8 +146,8 @@ public class ChromosomeWithEnhancers {
     public void output_for_R(String filename) {
         try {
             BufferedWriter bw = new BufferedWriter(new FileWriter(filename));
-            for (List<Enhancer> enhs : chromosome2enhancerList.values()) {
-                for (Enhancer enh : enhs) {
+            for (List<RegulatoryElement> enhs : chromosome2enhancerList.values()) {
+                for (RegulatoryElement enh : enhs) {
                     if (enh.isCpG()) {
                         double mean = enh.getMeanH3K27AcPer1000(number_of_experiments);
                         bw.write(String.format("%s\t%f\n", "cgi", mean ));

@@ -1,6 +1,6 @@
 package org.jax.npi.io;
 
-import org.jax.npi.data.Enhancer;
+import org.jax.npi.data.RegulatoryElement;
 
 import java.io.BufferedReader;
 import java.io.FileReader;
@@ -8,19 +8,19 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-public class TssStatsParser {
+public class TssEnhancerStatsParser implements RegulatoryElementTssParser {
 
     /** path to tss-stats-hg38e.txt file. */
     private final String pathToTssStatsFile;
 
-    private List<Enhancer> enhancerList = new ArrayList<>();
+    private List<RegulatoryElement> enhancerList = new ArrayList<>();
 
-    public TssStatsParser(String path) {
+    public TssEnhancerStatsParser(String path) {
         this.pathToTssStatsFile = path;
         parse();
     }
 
-    public List<Enhancer> getEnhancerList() {
+    public List<RegulatoryElement> getEnhancerList() {
         return enhancerList;
     }
 
@@ -60,10 +60,10 @@ public class TssStatsParser {
                 int start = Integer.parseInt(B[0]);
                 int end = Integer.parseInt(B[1]);
                 if (cpgp.equals("1") && cpcm.equals("0")) {
-                    enhancerList.add(new Enhancer(chrom, start, end, true));
+                    enhancerList.add(new RegulatoryElement(chrom, start, end, true));
                     cpg_count++;
                 } else if (cpgp.equals("0") && cpcm.equals("1")) {
-                    enhancerList.add(new Enhancer(chrom, start, end, false));
+                    enhancerList.add(new RegulatoryElement(chrom, start, end, false));
                     non_cpg_count++;
                 } else {
                     System.err.printf("Bad code cpcp=%s cpcm=%s\n", cpgp, cpcm);
