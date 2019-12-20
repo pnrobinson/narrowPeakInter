@@ -39,7 +39,7 @@ public class TssPromoterStatsParser implements RegulatoryElementTssParser {
             String line = br.readLine(); // discard header
             while ((line = br.readLine())!= null) {
                 String []F = line.split("\t");
-                String tss = F[0];
+                String tss = F[0].replaceAll("\"","");
                 boolean isPlusStrand = tss.contains("+");
                 String []AA = tss.split(",");
                 String pos = AA[0];

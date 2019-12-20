@@ -11,6 +11,7 @@ public class RegulatoryElement implements Comparable<RegulatoryElement> {
     private final int begin;
     private final int end;
     private final List<Double> means;
+    private final List<Double> maxima;
     private List<H3K27AcSignal> signals;
     private final boolean isCpG;
 
@@ -23,6 +24,7 @@ public class RegulatoryElement implements Comparable<RegulatoryElement> {
             System.err.printf("[ERROR] chrom=%s, begin=%d, end=%d CpG=%b\n", chrom, begin, end, cpg);
         }
         this.means = new ArrayList<>();
+        this.maxima = new ArrayList<>();
         this.isCpG = cpg;
         signals = new ArrayList<>();
     }
@@ -52,9 +54,12 @@ public class RegulatoryElement implements Comparable<RegulatoryElement> {
     public void processLastExperiment() {
         // process the H3K27AcSignal from the last experiment and then reset the list
         if (this.signals.isEmpty()) {
-            this.means.add(0.0);
+            this.means.add(1.0); // pseudocount
+            this.maxima.add(1.0);
             return; // no need to reset
         }
+        double max = this.signals.stream().mapToDouble(H3K27AcSignal::getValue).max().orElse(1.0);
+        this.maxima.add(max);
         double weightedSum = 0.0;
         int totallen = 0;
         for (H3K27AcSignal h3 : this.signals) {
@@ -90,6 +95,19 @@ public class RegulatoryElement implements Comparable<RegulatoryElement> {
             }
         }
         double m = means.stream().mapToDouble(Double::doubleValue).average().getAsDouble();
+        return m;
+    }
+
+    public double getMeanMaxH3K27ac(int expectedTotal) {
+        if (expectedTotal > means.size()) {
+            // in this case, some experiments are missing data for this region. Assume that
+            // this means there is a zero value
+            int delta = expectedTotal - means.size();
+            for (int j = 0; j < delta; ++j) {
+                maxima.add(1.0);
+            }
+        }
+        double m = maxima.stream().mapToDouble(Double::doubleValue).average().getAsDouble();
         return m;
     }
 

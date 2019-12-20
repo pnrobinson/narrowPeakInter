@@ -40,6 +40,10 @@ public class TssEnhancerStatsParser implements RegulatoryElementTssParser {
             String line = br.readLine(); // discard header
             while ((line = br.readLine())!= null) {
                 String []F = line.split("\t");
+                if (F.length < 12) {
+                    System.err.printf("[ERROR] malformed line with %d fields: %s\n", F.length, line);
+                    continue;
+                }
                 String tss = F[0];
                 boolean isPlusStrand = tss.contains("+");
                 if (! isPlusStrand) {

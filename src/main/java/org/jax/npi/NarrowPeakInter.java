@@ -6,17 +6,19 @@ import com.beust.jcommander.ParameterException;
 import org.jax.npi.analysis.ChromosomeWithEnhancers;
 import org.jax.npi.data.RegulatoryElement;
 import org.jax.npi.io.NarrowPeakDownloader;
+import org.jax.npi.io.RegulatoryElementTssParser;
 import org.jax.npi.io.TssEnhancerStatsParser;
+import org.jax.npi.io.TssPromoterStatsParser;
 
 import java.io.File;
 import java.util.List;
 
 public class NarrowPeakInter {
 
-    @Parameter(names = {"-e","--enhancer"}, description = "path to ss-stats-hg38e.txt file", required = true)
+    @Parameter(names = {"-e","--enhancer"}, description = "path to tss-stats-hg38e.txt file", required = true)
     private String enhancerPath;
 
-    @Parameter(names = {"-p","--promoter"}, description = "path to ss-stats-hg38p.txt file", required = true)
+    @Parameter(names = {"-p","--promoter"}, description = "path to tss-stats-hg38p.txt file", required = true)
     private String promoterPath;
 
 
@@ -48,15 +50,18 @@ public class NarrowPeakInter {
 
     private void analyzeH3K27ac(String group) {
         String tssFile;
+        RegulatoryElementTssParser tssParser;
         if (group.equals("enhancer")) {
             tssFile = this.enhancerPath;
+            tssParser = new TssEnhancerStatsParser(tssFile);
         } else if (group.equals("promoter")) {
             tssFile = this.promoterPath;
+            tssParser = new TssPromoterStatsParser(tssFile);
         } else {
             System.err.println("[ERRROR] Did not recognize group:" + group);
             return;
         }
-        TssEnhancerStatsParser tssParser = new TssEnhancerStatsParser(tssFile);
+
         List<RegulatoryElement> enhancers = tssParser.getEnhancerList();
         if (enhancers.isEmpty()) {
             throw new RuntimeException("Was not able to parse any enhancers");
