@@ -4,7 +4,7 @@
 
     <groupId>org.jax</groupId>
     <artifactId>narrowPeakInter</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.2</version>
     <name>narrowPeakInter</name>
     <packaging>jar</packaging>
 
@@ -115,7 +115,7 @@
     </dependencyManagement>
 
     <build>
-        <finalName>pairdc</finalName>
+        <finalName>npi</finalName>
         <!--  <sourceDirectory>src</sourceDirectory> -->
         <resources>
             <resource>
@@ -200,7 +200,7 @@
                         <configuration>
                             <transformers>
                                 <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <mainClass>org.jax.pairdc.Main</mainClass>
+                                    <mainClass>org.jax.npi.Main</mainClass>
                                 </transformer>
                             </transformers>
                         </configuration>

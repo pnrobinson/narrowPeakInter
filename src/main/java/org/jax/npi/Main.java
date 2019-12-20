@@ -28,6 +28,9 @@ public class Main {
 
         TssStatsParser tssParser = new TssStatsParser(tssFile);
         List<Enhancer> enhancers = tssParser.getEnhancerList();
+        if (enhancers.isEmpty()) {
+            throw new RuntimeException("Was not able to parse any enhancers");
+        }
         ChromosomeWithEnhancers chromwe = new ChromosomeWithEnhancers(enhancers);
         File folder = new File("data");
         for (final File fileEntry : folder.listFiles()) {

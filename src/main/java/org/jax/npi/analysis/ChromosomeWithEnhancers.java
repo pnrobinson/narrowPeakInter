@@ -58,36 +58,53 @@ public class ChromosomeWithEnhancers {
                 int begin = Integer.parseInt(F[1]);
                 int end = Integer.parseInt(F[2]);
                 double value = Double.parseDouble(F[6]);
-                addDataPoint(chrom, begin, end, value, bedfile.getName());
+                addDataPoint(chrom, begin, end, value);
             }
         } catch (IOException e) {
             e.printStackTrace();
             throw new RuntimeException("Could not read " + bedfile.getAbsolutePath());
         }
         this.number_of_experiments += 1;
+        // process the data from this experment
+        for ( List<Enhancer> lst : chromosome2enhancerList.values()) {
+            for (Enhancer e : lst) {
+                e.processLastExperiment();
+            }
+        }
     }
 
 
 
     /** Naive algorithm, but fast enough in practice. */
-    private void addDataPoint(String chrom, int begin, int end, double value, String experiment) {
+    private void addDataPoint(String chrom, int begin, int end, double value) {
         if (! this.chromosome2enhancerList.containsKey(chrom)) {
             System.err.println("Could not find chromosome " + chrom);
             return;
         }
+        if (begin > end) {
+            throw new RuntimeException(String.format("Begin=%d and end =%d\n", begin, end));
+        }
         List<Enhancer> enhancers = this.chromosome2enhancerList.get(chrom);
         for (Enhancer e : enhancers) {
-            if (begin > e.getEnd()) {
-                return; // if this is the case, there is no overlap -- the enhancers are sorted
+            if (e.getBegin() > end) {
+                return; // the enhancers are sorted -- the current enhancer is already beyond the end
+                // of the new interval and there was no match
             } else if (end < e.getBegin()) {
                 continue; //(begin, end) is located 5' to the enhancer
-            } else if (begin >= e.getBegin() || end <= e.getEnd()){
-                // if we get here, there is OVERLAP
+            } else if (end >= e.getBegin() && end <= e.getEnd()){
+                // if we get here, there is OVERLAP -- end is within the enhancer
                 //int len = getOverlap(begin, end, e);
                 int B = begin < e.getBegin() ? e.getBegin() : begin;
                 int E = end > e.getEnd() ? e.getEnd() : end;
                 H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
-                e.addH3K27AcValue(h3k27, experiment);
+                e.addH3K27AcValue(h3k27);
+            } else if (begin >= e.getBegin() && begin <= e.getEnd()){
+                // if we get here, there is OVERLAP -- begin (at least) is within the enhancer
+                //int len = getOverlap(begin, end, e);
+                int B = begin < e.getBegin() ? e.getBegin() : begin;
+                int E = end > e.getEnd() ? e.getEnd() : end;
+                H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
+                e.addH3K27AcValue(h3k27);
             }
         }
     }
