@@ -1,0 +1,38 @@
+\documentclass[a4paper,10pt]{article}
+\usepackage[utf8]{inputenc}
+\usepackage{graphicx}
+\usepackage[left=2cm, right=2cm, top=3cm, bottom=3cm]{geometry}
+
+
+\usepackage{subcaption}
+\captionsetup[subfigure]{labelfont=bf,font=Large,singlelinecheck=off, justification=raggedright}
+\usepackage[labelfont=bf]{caption}
+\renewcommand\thesubfigure{\Alph{subfigure}}
+\newcommand{\subcapsize}{\Large}
+
+
+\begin{document}
+
+
+
+\begin{figure}[!t]
+\begin{subfigure}[t]{0.49\textwidth}
+\Huge A
+\end{subfigure}
+\begin{subfigure}[t]{0.49\textwidth}
+\Huge B
+\end{subfigure}
+\begin{subfigure}[t]{0.49\textwidth}
+\includegraphics[width=1\textwidth]{h3k27ac-promoter.pdf} 
+\end{subfigure}
+% force a bit of vertical whitespace
+\begin{subfigure}[b]{0.49\textwidth}
+\includegraphics[width=1\textwidth]{h3k27ac-enhancer.pdf} 
+\end{subfigure}
+\end{figure}
+
+\end{document}
+
+
+
+
