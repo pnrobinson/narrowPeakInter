@@ -171,8 +171,18 @@ public class ChromosomeWithEnhancers {
                 nonZeroActivityNonCGI++;
             }
         }
-        System.out.printf("[INFO] CGI: Zero: %d, Nonzero: %d\n", zeroActivityCGI, nonZeroActivityCGI);
-        System.out.printf("[INFO] non-CGI: Zero: %d, Nonzero: %d\n", zeroActivityNonCGI, nonZeroActivityNonCGI);
+	int totalCGI = zeroActivityCGI + nonZeroActivityCGI;
+        System.out.printf("[INFO] CGI: Zero: %d (%.1f%%), Nonzero: %d (%.1f%%)\n",
+			  zeroActivityCGI,
+			  (double)zeroActivityCGI*100.0/(double)(totalCGI),
+			  nonZeroActivityCGI,
+			  (double)nonZeroActivityCGI*100.0/(double)(totalCGI));
+	int totalNonCGI = zeroActivityNonCGI + nonZeroActivityNonCGI;
+        System.out.printf("[INFO] non-CGI: Zero: %d (%.1f%%), Nonzero: %d (%.1f%%)\n",
+			  zeroActivityNonCGI,
+			  (double)zeroActivityNonCGI*100.0/(double)(totalNonCGI),
+			  nonZeroActivityNonCGI,
+			  (double)nonZeroActivityNonCGI*100.0/(double)(totalNonCGI));
         performChiSquareTest(zeroActivityCGI, nonZeroActivityCGI, zeroActivityNonCGI, nonZeroActivityNonCGI);
         System.out.printf("[INFO] Analyzed %d regulatory elements (%d were above zero)\n", total, totalabovezero);
         System.out.printf("[INFO] Mean H3K27Ac (CGI): %f.\n", cgistats.getMean());
