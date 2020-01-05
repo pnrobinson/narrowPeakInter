@@ -84,6 +84,7 @@ public class NarrowPeakInter {
         NarrowPeakDownloader downloader = new NarrowPeakDownloader();
         downloader.download();
         analyzeH3K27ac("enhancer");
+        System.out.println("########################################");
         analyzeH3K27ac("promoter");
 
     }
