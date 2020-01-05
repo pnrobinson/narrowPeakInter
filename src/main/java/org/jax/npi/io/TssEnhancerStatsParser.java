@@ -26,32 +26,27 @@ public class TssEnhancerStatsParser implements RegulatoryElementTssParser {
 
 
     /**
-     * tss     enhancer        tags    tau.c   tau.t   dispersion      dispersion<=12  CpG.p   CpG.m
-     * D       R       F       TATA    BREu    BREd    Inr     TCT     XCPE1   XCPE2   DPE     MTE     Bridge  DCE     DCE3
-     * F[1] enhancer position
-     * F[7] CpG.p
-     * F[8] CpG.m
-     * Just parse the plus strands --
+     * (location) CpG+_anystrand  CpG+_-strand    CpG+_+strand
+     * chr10:100006233-100006603       0       0       0
+     * chr10:100008181-100008444       0       0       0
+
      */
     private void parse() {
         int cpg_count = 0;
         int non_cpg_count = 0;
+        if (! this.pathToTssStatsFile.contains("cpg-hg38e.txt")) {
+            throw new RuntimeException("Enhancer file must be 'cpg-hg38e.txt' and not 'tss-stats-hg38e.txt'");
+        }
         try (BufferedReader br = new BufferedReader(new FileReader(this.pathToTssStatsFile))) {
             String line = br.readLine(); // discard header
             while ((line = br.readLine())!= null) {
                 String []F = line.split("\t");
-                if (F.length < 12) {
+                if (F.length < 4) {
                     System.err.printf("[ERROR] malformed line with %d fields: %s\n", F.length, line);
                     continue;
                 }
-                String tss = F[0];
-                boolean isPlusStrand = tss.contains("+");
-                if (! isPlusStrand) {
-                    continue;
-                }
-                String pos = F[1];
-                String cpgp = F[7];
-                String cpcm = F[8];
+                String pos = F[0];
+                String cpg = F[1];
                 String []A = pos.split(":");
                 if (A.length != 2) {
                     throw new RuntimeException("Bad position string: " + pos);
@@ -63,14 +58,12 @@ public class TssEnhancerStatsParser implements RegulatoryElementTssParser {
                 }
                 int start = Integer.parseInt(B[0]);
                 int end = Integer.parseInt(B[1]);
-                if (cpgp.equals("1") && cpcm.equals("0")) {
+                if (cpg.equals("1")) {
                     enhancerList.add(new RegulatoryElement(chrom, start, end, true));
                     cpg_count++;
-                } else if (cpgp.equals("0") && cpcm.equals("1")) {
+                } else {
                     enhancerList.add(new RegulatoryElement(chrom, start, end, false));
                     non_cpg_count++;
-                } else {
-                    System.err.printf("Bad code cpcp=%s cpcm=%s\n", cpgp, cpcm);
                 }
             }
 

@@ -83,7 +83,7 @@ public class TssPromoterStatsParser implements RegulatoryElementTssParser {
         } catch (IOException e) {
             e.printStackTrace();
         }
-        System.out.printf("[INFO] Parsed %d CGI enhancers and %d non-CGI enhancers.\n", cpg_count, non_cpg_count);
+        System.out.printf("[INFO] Parsed %d CGI promoters and %d non-CGI promoters.\n", cpg_count, non_cpg_count);
     }
 
 }
