@@ -92,23 +92,25 @@ public class ChromosomeWithEnhancers {
         }
         List<RegulatoryElement> enhancers = this.chromosome2enhancerList.get(chrom);
         for (RegulatoryElement e : enhancers) {
-            if (e.getBegin() > end) {
+            int enhancerStartPos = e.getBegin();
+            int enhancerEndPos = e.getEnd();
+            if (enhancerStartPos > end) {
                 return; // the enhancers are sorted -- the current enhancer is already beyond the end
                 // of the new interval and there was no match
-            } else if (end < e.getBegin()) {
+            } else if (end < enhancerStartPos) {
                 continue; //(begin, end) is located 5' to the enhancer
-            } else if (end >= e.getBegin() && end <= e.getEnd()){
-                // if we get here, there is OVERLAP -- end is within the enhancer
-                //int len = getOverlap(begin, end, e);
-                int B = begin < e.getBegin() ? e.getBegin() : begin;
-                int E = end > e.getEnd() ? e.getEnd() : end;
+            } else if (begin <= enhancerStartPos && end >= enhancerStartPos){
+                // if we get here, there is OVERLAP -- start position of the
+                // enhancer is within the H3K27ac region
+                int B = begin < enhancerStartPos ? enhancerStartPos : begin;
+                int E = end > enhancerEndPos ? enhancerEndPos : end;
                 H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
                 e.addH3K27AcValue(h3k27);
-            } else if (begin >= e.getBegin() && begin <= e.getEnd()){
+            } else if (begin <= enhancerEndPos && end >= enhancerEndPos){
                 // if we get here, there is OVERLAP -- begin (at least) is within the enhancer
                 //int len = getOverlap(begin, end, e);
-                int B = begin < e.getBegin() ? e.getBegin() : begin;
-                int E = end > e.getEnd() ? e.getEnd() : end;
+                int B = begin < enhancerStartPos ? enhancerStartPos : begin;
+                int E = end > enhancerEndPos ? enhancerEndPos : end;
                 H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
                 e.addH3K27AcValue(h3k27);
             }
