@@ -79,7 +79,7 @@ public class ChromosomeWithEnhancers {
 
 
     /** Naive algorithm, but fast enough in practice. */
-    private void addDataPoint(String chrom, int begin, int end, double value) {
+    private void addDataPoint(String chrom, int beginH3K27ac, int endH3K27ac, double value) {
         if (! this.chromosome2enhancerList.containsKey(chrom)) {
             if (chrom.contains("random") || chrom.contains("Un_")) {
                 // do not worry about these scaffolds, just skip
@@ -87,32 +87,86 @@ public class ChromosomeWithEnhancers {
             }
             throw new RuntimeException("Could not find chromosome " + chrom);
         }
-        if (begin > end) {
-            throw new RuntimeException(String.format("Begin=%d and end =%d\n", begin, end));
+        if (beginH3K27ac > endH3K27ac) {
+            throw new RuntimeException(String.format("Begin=%d and end =%d\n", beginH3K27ac, endH3K27ac));
         }
         List<RegulatoryElement> enhancers = this.chromosome2enhancerList.get(chrom);
         for (RegulatoryElement e : enhancers) {
             int enhancerStartPos = e.getBegin();
             int enhancerEndPos = e.getEnd();
-            if (enhancerStartPos > end) {
-                return; // the enhancers are sorted -- the current enhancer is already beyond the end
-                // of the new interval and there was no match
-            } else if (end < enhancerStartPos) {
-                continue; //(begin, end) is located 5' to the enhancer
-            } else if (begin <= enhancerStartPos && end >= enhancerStartPos){
-                // if we get here, there is OVERLAP -- start position of the
-                // enhancer is within the H3K27ac region
-                int B = begin < enhancerStartPos ? enhancerStartPos : begin;
-                int E = end > enhancerEndPos ? enhancerEndPos : end;
+            if (enhancerStartPos > endH3K27ac) {
+                // the enhancers are sorted -- the current enhancer is already beyond the end
+                // of the new interval and there was no match. There is no more hope
+                // of finding a match, so we can just return
+                return;
+            } else if (enhancerEndPos < beginH3K27ac) {
+                // The H3K27ac region is located 3' (downstream) to the current enhancer
+                // therefore, skip to the next enhancer and check for overlap
+                continue;
+            } else if (beginH3K27ac <= enhancerStartPos && endH3K27ac >= enhancerStartPos) {
+                /*
+                        |--enhancer--|
+                     |------ peak---------|
+                   begin                 end
+                        or
+                          |--enhancer--------|
+                     |------ peak---------|
+                   begin                 end
+                 */
+                int B = enhancerStartPos; //
+                int E = Math.min(endH3K27ac, enhancerEndPos);
                 H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
                 e.addH3K27AcValue(h3k27);
-            } else if (begin <= enhancerEndPos && end >= enhancerEndPos){
-                // if we get here, there is OVERLAP -- begin (at least) is within the enhancer
-                //int len = getOverlap(begin, end, e);
-                int B = begin < enhancerStartPos ? enhancerStartPos : begin;
-                int E = end > enhancerEndPos ? enhancerEndPos : end;
+            } else if (beginH3K27ac <= enhancerEndPos && endH3K27ac >= enhancerEndPos) {
+                  /*
+                        |--enhancer--|
+                     |------ peak---------|
+                   begin                 end
+                        or
+                 |--enhancer--------|
+                     |------ peak---------|
+                   begin                 end
+                 */
+                int B = beginH3K27ac < enhancerStartPos ? enhancerStartPos : beginH3K27ac;
+                int E = endH3K27ac > enhancerEndPos ? enhancerEndPos : endH3K27ac;
                 H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
                 e.addH3K27AcValue(h3k27);
+            } else if (enhancerStartPos <= beginH3K27ac &&  endH3K27ac <= enhancerEndPos) {
+                // H3K27Ac region including entirely within the enhancer
+                 /*
+                        |----enhancer----|
+                             |-- peak-|
+                            begin     end
+                */
+                int B = Math.max(enhancerStartPos, beginH3K27ac);
+                int E = Math.min(enhancerEndPos, endH3K27ac);
+                H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
+                e.addH3K27AcValue(h3k27);
+            } else if ( beginH3K27ac <=  enhancerStartPos &&  enhancerEndPos  <= endH3K27ac) {
+                // enhancer  including entirely within the H3K27Ac region
+                 /*
+                        |----enhancer----|
+                      |------- peak----------------|
+                */
+                int B = Math.max(enhancerStartPos, beginH3K27ac);
+                int E = Math.min(enhancerEndPos, endH3K27ac);
+                H3K27AcSignal h3k27 = new H3K27AcSignal(B, E, value);
+                e.addH3K27AcValue(h3k27);
+            } else {
+                // should never happen, actually
+                System.out.printf("begin:%d, end:%d, enhancerStartPos:%d, enhancerEndPos: %d\n",
+                        beginH3K27ac, endH3K27ac, enhancerStartPos, enhancerEndPos);
+                if (beginH3K27ac < enhancerStartPos) {
+                    System.out.println("H3K27ac-start is 5'");
+                } else {
+                    System.out.println("Enhancer-start is 5'");
+                }
+                if (endH3K27ac < enhancerEndPos) {
+                    System.out.println("H3K27ac-end is 5'");
+                } else {
+                    System.out.println("Enhancer-end is 5'");
+                }
+                throw new RuntimeException("Missed case for overlap between H3K27Ac and Ehancer");
             }
         }
     }
